@@ -128,6 +128,7 @@ except:
 
 def run_bot():
 
+    date_save = get_date_time()
     bars = exchange.fetch_ohlcv(underlying_to_trade, timeframe=timeframe, limit=limit_data_lookback)
     df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
