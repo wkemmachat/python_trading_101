@@ -190,7 +190,7 @@ def run_bot():
             ####################################
             #Action market buy
             ####################################
-            """
+            
             order = exchange.create_order(underlying_to_trade,'market','buy',amountToBuy)
             time.sleep(2)
             # order_price = float(order['fills'][0]['price']) # there are many price but select only one first
@@ -208,11 +208,11 @@ def run_bot():
             
             insert_transaction(underlying_to_trade,amountToBuy,'buy',date_save,order,strategy)
             insert_balance(underlying_to_trade,(trade_money-order_price*amountToBuy),'True',date_save,trade_money,order_price,0,amountToBuy)
-            """
+            
 
             #Test Database 
-            insert_transaction(underlying_to_trade,amountToBuy,'buy',date_save,'order_detail',strategy)
-            insert_balance(underlying_to_trade,(trade_money-askPrice*amountToBuy),'True',date_save,trade_money,askPrice,0,amountToBuy)
+            # insert_transaction(underlying_to_trade,amountToBuy,'buy',date_save,'order_detail',strategy)
+            # insert_balance(underlying_to_trade,(trade_money-askPrice*amountToBuy),'True',date_save,trade_money,askPrice,0,amountToBuy)
             
 
             #Send Notification Discord / Line
@@ -243,7 +243,7 @@ def run_bot():
                 ####################################
                 #Action market Sell
                 ####################################
-                """
+                
                 order = exchange.create_order(underlying_to_trade,'market','sell',amountToSell)
                 time.sleep(2)
                 order_price = order['price']
@@ -261,12 +261,12 @@ def run_bot():
 
                 insert_transaction(underlying_to_trade,amountToSell,'sell',date_save,order,strategy)
                 insert_balance(underlying_to_trade,(balance_before+amountToSell*order_price),'False',date_save,balance_before,0,order_price,amountToSell)
-                """
+                
 
                 #Test Database 
                 p_and_l = (bidPrice-buy_price_before)*amountToSell
-                insert_transaction(underlying_to_trade,amountToSell,'sell',date_save,'order_detail',strategy)
-                insert_balance(underlying_to_trade,(balance_before+amountToSell*bidPrice),'False',date_save,balance_before,0,bidPrice,amountToSell)
+                # insert_transaction(underlying_to_trade,amountToSell,'sell',date_save,'order_detail',strategy)
+                # insert_balance(underlying_to_trade,(balance_before+amountToSell*bidPrice),'False',date_save,balance_before,0,bidPrice,amountToSell)
                 
                 #Send Notification Discord / Line
                 msg = '-- Sell Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade +' , bidPrice : '+str(bidPrice)+ ' , amountToSell: '+str(amountToSell)
