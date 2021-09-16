@@ -24,7 +24,7 @@ exchange = ccxt.binance({
 ############################################
 # underlying_to_trade = 'ETH/USDT'
 # pair = underlying_to_trade
-timeframe = '1h'
+timeframe = '1d'
 limit_data_lookback = 100
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
@@ -146,8 +146,8 @@ for index, row in all_symbols_df.iterrows():
     # print(row['symbol'])
     symbol = row['symbol']
     
-    if(index>10):
-        continue
+    # if(index>10):
+    #     continue
     # if symbol.lower().find("eth/usdt") >=0  :
     if ((symbol.lower().find("usd")) ==0 or (symbol.lower().find("busd"))) ==0:
         continue
@@ -205,8 +205,8 @@ for index, row in all_symbols_df.iterrows():
         buyHoldSellSignal = 0
         no_signal_symbols.append(symbol)
         #Send Notification Discord / Line
-        msg = '-- No Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade
-        r = requests.post(url_line, headers=headers, data = {'message':msg})
+        # msg = '-- No Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade
+        # r = requests.post(url_line, headers=headers, data = {'message':msg})
     
 ##########################################
 #End Run Bot
