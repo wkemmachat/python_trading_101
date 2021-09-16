@@ -155,7 +155,23 @@ for index, row in all_symbols_df.iterrows():
     date_save = get_date_time()
     print('symbol in loop: '+symbol+' , dateTime = '+date_save)
     
-    bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit_data_lookback)
+    global bars
+    try:
+        #Get Data
+        # balance = exchange.fetch_balance()
+        # ticker = exchange.fetch_ticker(underlying_to_trade)
+        bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit_data_lookback)
+    
+        msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
+        # r = requests.post(url_line, headers=headers, data = {'message':msg})
+        # print (r.text)
+    except:
+        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
+        r = requests.post(url_line, headers=headers, data = {'message':msg})
+        # print (r.text)
+        canContinue = False
+    
+    
     if(len(bars)<27):
         continue
     df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
