@@ -37,7 +37,7 @@ limit_data_lookback = 100
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
-strategy = 'CDC_12_26'
+strategy = 'SuperTrend'
 
 
 ### LINE NOTI
@@ -235,7 +235,7 @@ for index, row in all_symbols_df.iterrows():
 
     
 
-    if((df.iloc[-1]['EMA_12']>df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']<df.iloc[-2]['EMA_26'])):
+    if((df.iloc[-1]['close']>df.iloc[-1]['SUPERT_7_3.0'])&(df.iloc[-2]['close']<df.iloc[-2]['SUPERT_7_3.0'])):
         
         #BUY ACTION
         buyHoldSellSignal = 1
@@ -253,7 +253,7 @@ for index, row in all_symbols_df.iterrows():
 
     
 
-    elif((df.iloc[-1]['EMA_12']<df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']>df.iloc[-2]['EMA_26'])):
+    elif((df.iloc[-1]['close']<df.iloc[-1]['SUPERT_7_3.0'])&(df.iloc[-2]['close']>df.iloc[-2]['SUPERT_7_3.0'])):
         buyHoldSellSignal = -1
         
         #Send Notification Discord / Line
