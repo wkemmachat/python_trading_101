@@ -41,7 +41,7 @@ strategy = 'CDC_12_26'
 
 
 ### LINE NOTI
-token_line = '93YYC4khdS3F8EnkesX1DIqNxAh6YnYLwYnfJYrWx1M'
+token_line = 'oJ5d4MuDl9C7gjfHGzCoVQPIRy5EUsNhSPbo3cCRl9T'
 headers = {'Authorization':'Bearer '+token_line}
 url_line = 'https://notify-api.line.me/api/notify'
 
