@@ -34,7 +34,7 @@ exchange = ccxt.binance({
 # underlying_to_trade = 'ETH/USDT'
 # pair = underlying_to_trade
 timeframe = '1d'
-limit_data_lookback = 1000
+limit_data_lookback = 100
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
@@ -262,7 +262,18 @@ for index, row in all_symbols_df.iterrows():
         file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
-        #Port
+        #Port query more data
+        bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=1000)
+        df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df.set_index('timestamp',inplace = True)
+
+        #Insert TA
+        df.ta.rsi(length=14,append=True)
+        df.ta.ema(length=12,append=True)
+        df.ta.ema(length=26,append=True)
+        df.ta.supertrend(append=True)
+        
         df['signal'] = df.apply(my_strategy2,axis=1).vbt.fshift(1)
         df = df.iloc[1:,:]
         signal_vectorbt = df.ta.tsignals(df.signal, asbool=True, append=True)
