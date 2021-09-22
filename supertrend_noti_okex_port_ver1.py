@@ -22,7 +22,7 @@ import vectorbt as vbt
 
 # pd.options.plotting.backend = 'plotly'
 
-exchange = ccxt.binance({
+exchange = ccxt.okex({
     
 })
 #Set Testnet
@@ -42,7 +42,7 @@ strategy = 'SUPERTREND'
 
 
 ### LINE NOTI
-token_line = 'oJ5d4MuDl9C7gjfHGzCoVQPIRy5EUsNhSPbo3cCRl9T'
+token_line = 'gJgJ2VE7dBr0QHsPhzJTO7zfEe2MoCmCUxgja3P60iT'
 headers = {'Authorization':'Bearer '+token_line}
 url_line = 'https://notify-api.line.me/api/notify'
 
@@ -115,7 +115,7 @@ def insert_transaction(underlying_name,amount,buyorsell,date,order,strategy):
 #End Database    
 
 #Save Image
-def saveImage(df,symbol,only_date,strategy):
+def saveImage(df,symbol,only_date):
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                 vertical_spacing=0.10, subplot_titles=(symbol, 'volume'), 
                 row_width=[0.2, 0.7])
@@ -125,12 +125,11 @@ def saveImage(df,symbol,only_date,strategy):
                     row=1, col=1)
 
     fig.add_trace(go.Scatter(x=df.index, y=df["SUPERT_7_3.0"], marker_color='red',name="SUPERTREND"), row=1, col=1)
-    # fig.add_trace(go.Scatter(x=df.index, y=df["EMA_26"], marker_color='lightgrey',name="EMA26"), row=1, col=1)
-
+    
     fig.add_trace(go.Bar(x=df.index, y=df['volume'], marker_color='red', showlegend=False), row=2, col=1)
 
     fig.update_layout(
-        title=symbol+' '+strategy+' historical price chart',
+        title=symbol+' historical price chart',
         xaxis_tickfont_size=12,
         yaxis=dict(
             title='Price',
@@ -144,7 +143,7 @@ def saveImage(df,symbol,only_date,strategy):
         paper_bgcolor='LightSteelBlue'
     )
 
-    pic_save_name = symbol.replace('/','_')+strategy+only_date
+    pic_save_name = symbol.replace('/','_')+only_date
     fig.update(layout_xaxis_rangeslider_visible=False)
     fig.write_image("images/"+pic_save_name+".jpg")
     # fig.show(renderer="png")
@@ -176,11 +175,11 @@ try:
     #Get Data
     # balance = exchange.fetch_balance()
     # ticker = exchange.fetch_ticker(underlying_to_trade)
-    msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
+    msg = 'API OKEX Working -- Normal --, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
 except:
-    msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
+    msg = 'API OKEX --- ERROR ---, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
     canContinue = False
@@ -189,7 +188,7 @@ except:
 #Start Run Bot
 ##########################################
 
-all_symbols_df = pd.read_csv('symbol_binance.csv')
+all_symbols_df = pd.read_csv('symbol_okex.csv')
 print(all_symbols_df)
 
 buy_signal_symbols = []
@@ -224,11 +223,11 @@ for index, row in all_symbols_df.iterrows():
         # ticker = exchange.fetch_ticker(underlying_to_trade)
         bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit_data_lookback)
     
-        msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
+        msg = 'API OKEX Working -- Normal --, Timing : '+get_date_time()
         # r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
     except:
-        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
+        msg = 'API OKEX --- ERROR ---, Timing : '+get_date_time()
         r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
         canContinue = False
@@ -253,13 +252,13 @@ for index, row in all_symbols_df.iterrows():
         buyHoldSellSignal = 1
         buy_signal_symbols.append(symbol)
 
-        saveImage(df,symbol,only_date,strategy)
+        saveImage(df,symbol,only_date)
     
         msg = '-- Buy Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
         r = requests.post(url_line, headers=headers, data = {'message':msg})
 
         msg = symbol
-        file = {'imageFile':open('images/'+symbol.replace('/','_')+strategy+only_date+'.jpg','rb')}
+        file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
         #Port query more data
@@ -284,8 +283,8 @@ for index, row in all_symbols_df.iterrows():
                                   fees = 0.0025,
                                   slippage = 0.0025)
 
-        port.plot().write_image('images_port/'+symbol.replace('/','_')+strategy+only_date+'.jpg')
-        file = {'imageFile':open('images_port/'+symbol.replace('/','_')+strategy+only_date+'.jpg','rb')}
+        port.plot().write_image('images_port/'+symbol.replace('/','_')+only_date+'.jpg')
+        file = {'imageFile':open('images_port/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
 
@@ -295,13 +294,13 @@ for index, row in all_symbols_df.iterrows():
         #Send Notification Discord / Line
         sell_signal_symbols.append(symbol)
         
-        saveImage(df,symbol,only_date,strategy)
+        saveImage(df,symbol,only_date)
     
         msg = '-- Sell Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
         r = requests.post(url_line, headers=headers, data = {'message':msg})
 
         msg = symbol
-        file = {'imageFile':open('images/'+symbol.replace('/','_')+strategy+only_date+'.jpg','rb')}
+        file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
 
