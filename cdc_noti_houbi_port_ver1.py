@@ -263,30 +263,36 @@ for index, row in all_symbols_df.iterrows():
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
         #Port query more data
-        bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=1000)
-        df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df.set_index('timestamp',inplace = True)
+        try:
+            bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=1000)
+            df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            df.set_index('timestamp',inplace = True)
 
-        #Insert TA
-        df.ta.rsi(length=14,append=True)
-        df.ta.ema(length=12,append=True)
-        df.ta.ema(length=26,append=True)
-        df.ta.supertrend(append=True)
+            #Insert TA
+            df.ta.rsi(length=14,append=True)
+            df.ta.ema(length=12,append=True)
+            df.ta.ema(length=26,append=True)
+            df.ta.supertrend(append=True)
+            
+            df['signal'] = df.apply(my_strategy2,axis=1).vbt.fshift(1)
+            df = df.iloc[1:,:]
+            signal_vectorbt = df.ta.tsignals(df.signal, asbool=True, append=True)
+            port = vbt.Portfolio.from_signals(df.close,
+                                    entries = signal_vectorbt.TS_Entries,
+                                    exits = signal_vectorbt.TS_Exits,
+                                    init_cash = 100000,
+                                    fees = 0.0025,
+                                    slippage = 0.0025)
+
+            port.plot().write_image('images_port/'+symbol.replace('/','_')+only_date+'.jpg')
+            file = {'imageFile':open('images_port/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
+            r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
         
-        df['signal'] = df.apply(my_strategy2,axis=1).vbt.fshift(1)
-        df = df.iloc[1:,:]
-        signal_vectorbt = df.ta.tsignals(df.signal, asbool=True, append=True)
-        port = vbt.Portfolio.from_signals(df.close,
-                                  entries = signal_vectorbt.TS_Entries,
-                                  exits = signal_vectorbt.TS_Exits,
-                                  init_cash = 100000,
-                                  fees = 0.0025,
-                                  slippage = 0.0025)
+        except:
+            msg = 'API Houbi --- ERROR ---, Timing : '+get_date_time()+', symbol :'+symbol
+            r = requests.post(url_line, headers=headers, data = {'message':msg})
 
-        port.plot().write_image('images_port/'+symbol.replace('/','_')+only_date+'.jpg')
-        file = {'imageFile':open('images_port/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
-        r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
 
     elif((df.iloc[-1]['EMA_12']<df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']>df.iloc[-2]['EMA_26'])):
