@@ -228,7 +228,7 @@ for index, row in all_symbols_df.iterrows():
         # r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
     except:
-        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
+        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()+', Symbol :'+symbol
         r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
         canContinue = False
