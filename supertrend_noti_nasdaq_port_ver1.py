@@ -35,7 +35,7 @@ limit_data_lookback_port = 1000
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
-strategy = 'CDC_12_26'
+strategy = 'SUPERTREND'
 
 
 
@@ -119,8 +119,10 @@ def saveImage(df,symbol,only_date):
                     low=df["Low"], close=df["Adj Close"], name="OHLC"), 
                     row=1, col=1)
 
-    fig.add_trace(go.Scatter(x=df.index, y=df["EMA_12"], marker_color='grey',name="EMA12"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df["EMA_26"], marker_color='lightgrey',name="EMA26"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df["SUPERT_7_3.0"], marker_color='red',name="SUPERTREND"), row=1, col=1)
+    
+    # fig.add_trace(go.Scatter(x=df.index, y=df["EMA_12"], marker_color='grey',name="EMA12"), row=1, col=1)
+    # fig.add_trace(go.Scatter(x=df.index, y=df["EMA_26"], marker_color='lightgrey',name="EMA26"), row=1, col=1)
 
     fig.add_trace(go.Bar(x=df.index, y=df['Volume'], marker_color='red', showlegend=False), row=2, col=1)
 
@@ -132,15 +134,15 @@ def saveImage(df,symbol,only_date):
             titlefont_size=14,
             tickfont_size=12,
         ),
-        autosize=False,
-        width=800,
-        height=500,
+        autosize=True,
+        width=1200,
+        height=800,
         margin=dict(l=50, r=50, b=100, t=100, pad=4),
         paper_bgcolor='LightSteelBlue'
     )
 
     fig.update_layout(yaxis_range=[df.min()['Low']*0.95,df.max()['High']*1.05])
-    
+
     pic_save_name = symbol.replace('/','_')+only_date
     fig.update(layout_xaxis_rangeslider_visible=False)
     fig.write_image("images_us/"+pic_save_name+".jpg")
@@ -152,7 +154,7 @@ def saveImage(df,symbol,only_date):
 
 #Stratergy
 def my_strategy2(df):
-    if (df.EMA_12 > df.EMA_26) :
+    if (df['Adj Close'] > df['SUPERT_7_3.0']) :
         return True
     else :
         return False
@@ -269,7 +271,7 @@ for index, row in all_symbols_df.iterrows():
     # print(df)
 
     
-    if((df.iloc[-1]['EMA_12']>df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']<df.iloc[-2]['EMA_26'])):
+    if((df.iloc[-1]['Adj Close']>df.iloc[-1]['SUPERT_7_3.0'])&(df.iloc[-2]['Adj Close']<df.iloc[-2]['SUPERT_7_3.0'])):
         
         #BUY ACTION
         buyHoldSellSignal = 1
@@ -315,7 +317,7 @@ for index, row in all_symbols_df.iterrows():
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
 
-    elif((df.iloc[-1]['EMA_12']<df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']>df.iloc[-2]['EMA_26'])):
+    elif((df.iloc[-1]['Adj Close']<df.iloc[-1]['SUPERT_7_3.0'])&(df.iloc[-2]['Adj Close']>df.iloc[-2]['SUPERT_7_3.0'])):
         buyHoldSellSignal = -1
         
         #Send Notification Discord / Line
