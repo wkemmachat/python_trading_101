@@ -16,13 +16,14 @@ from pandas_datareader import data as pdr
 import plotly.offline as pyo
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import vectorbt as vbt
 
 # pyo.init_notebook_mode(connected=True)
 
 # pd.options.plotting.backend = 'plotly'
 
-exchange = ccxt.gateio({
-    'enableRateLimit': True,  # required: https://github.com/ccxt/ccxt/wiki/Manual#rate-limit
+exchange = ccxt.binance({
+    
 })
 #Set Testnet
 # exchange.set_sandbox_mode(True)
@@ -33,15 +34,15 @@ exchange = ccxt.gateio({
 # underlying_to_trade = 'ETH/USDT'
 # pair = underlying_to_trade
 timeframe = '1d'
-limit_data_lookback = 100
+limit_data_lookback = 200
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
-strategy = 'CDC_12_26'
+strategy = 'All Time High'
 
 
 ### LINE NOTI
-token_line = '78tRVvP3UmqYkmfm8LRMG6wWtlBJfwyOFuMzrfloMD9'
+token_line = 'oJ5d4MuDl9C7gjfHGzCoVQPIRy5EUsNhSPbo3cCRl9T'
 headers = {'Authorization':'Bearer '+token_line}
 url_line = 'https://notify-api.line.me/api/notify'
 
@@ -75,43 +76,6 @@ def get_last_trade_price(pair):
     last_trade_price = trade_history['price']
     
     return float(last_trade_price)
-##########################################
-#Database
-##########################################
-
-def select_balance_id_desc_pair_only(pair):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    cur.execute("SELECT * FROM balance as b where b.underlying_name = ? order by b.id desc ",(pair,))
-    result = cur.fetchone()
-    con.close()
-    return result
-
-def select_balance_id_desc(pair,in_position):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    cur.execute("SELECT * FROM balance as b where b.underlying_name = ? and in_position = ? order by b.id desc ",(pair,in_position))
-    result = cur.fetchone()
-    con.close()
-    return result    
-    
-def insert_balance(underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    
-    cur.execute("INSERT INTO balance (underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell) VALUES (?,?,?,?,?,?,?,?)",(underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell))
-    con.commit()
-    con.close()
-
-def insert_transaction(underlying_name,amount,buyorsell,date,order,strategy):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-
-    cur.execute("INSERT INTO transaction_detail (underlying_name,amount,buyorsell,date,detail,strategy) VALUES (?,?,?,?,?,?) ",(underlying_name,amount,buyorsell,date,order,strategy))
-    con.commit()
-    con.close()
-
-#End Database    
 
 #Save Image
 def saveImage(df,symbol,only_date):
@@ -152,6 +116,18 @@ def saveImage(df,symbol,only_date):
 
 #End Save
 
+#Stratergy
+# def my_strategy2(df):
+#     if (df.EMA_12 > df.EMA_26) :
+#         return True
+#     else :
+#         return False
+
+
+#Save Port Image
+
+#End Save Port Image
+
 only_date = get_date()
 date_save = get_date_time()
 print(get_date_time())
@@ -163,11 +139,11 @@ try:
     #Get Data
     # balance = exchange.fetch_balance()
     # ticker = exchange.fetch_ticker(underlying_to_trade)
-    msg = 'API Gate IO Working -- Normal --, Timing : '+get_date_time()
+    msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
 except:
-    msg = 'API Gate IO --- ERROR ---, Timing : '+get_date_time()
+    msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
     canContinue = False
@@ -176,7 +152,7 @@ except:
 #Start Run Bot
 ##########################################
 
-all_symbols_df = pd.read_csv('symbol_gateio.csv')
+all_symbols_df = pd.read_csv('symbol_binance.csv')
 print(all_symbols_df)
 
 buy_signal_symbols = []
@@ -211,11 +187,11 @@ for index, row in all_symbols_df.iterrows():
         # ticker = exchange.fetch_ticker(underlying_to_trade)
         bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit_data_lookback)
     
-        msg = 'API Gate IO Working -- Normal --, Timing : '+get_date_time()
+        msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
         # r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
     except:
-        msg = 'API Gate IO --- ERROR ---, Timing : '+get_date_time()
+        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()+', Symbol :'+symbol
         r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
         canContinue = False
@@ -227,15 +203,16 @@ for index, row in all_symbols_df.iterrows():
     df.set_index('timestamp',inplace = True)
 
     #Insert TA
-    df.ta.rsi(length=14,append=True)
-    df.ta.ema(length=12,append=True)
-    df.ta.ema(length=26,append=True)
-    df.ta.supertrend(append=True)
+    # df.ta.rsi(length=14,append=True)
+    # df.ta.ema(length=12,append=True)
+    # df.ta.ema(length=26,append=True)
+    # df.ta.supertrend(append=True)
     # print(df.tail(30))
 
+    # df.close.rolling(200).max().fillna('N/A')
+    df['ath'] = df.close.rolling((len(df.index)-1)).max().fillna('N/A')
     
-
-    if((df.iloc[-1]['EMA_12']>df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']<df.iloc[-2]['EMA_26'])):
+    if(df.iloc[-1]['close']>=df.iloc[-1]['ath']):
         
         #BUY ACTION
         buyHoldSellSignal = 1
@@ -251,32 +228,7 @@ for index, row in all_symbols_df.iterrows():
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
 
-    
 
-    elif((df.iloc[-1]['EMA_12']<df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']>df.iloc[-2]['EMA_26'])):
-        buyHoldSellSignal = -1
-        
-        #Send Notification Discord / Line
-        sell_signal_symbols.append(symbol)
-        
-        saveImage(df,symbol,only_date)
-    
-        msg = '-- Sell Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
-        r = requests.post(url_line, headers=headers, data = {'message':msg})
-
-        msg = symbol
-        file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
-        r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
-
-
-
-
-    else:
-        buyHoldSellSignal = 0
-        no_signal_symbols.append(symbol)
-        #Send Notification Discord / Line
-        # msg = '-- No Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade
-        # r = requests.post(url_line, headers=headers, data = {'message':msg})
     
 ##########################################
 #End Run Bot
@@ -287,7 +239,5 @@ for index, row in all_symbols_df.iterrows():
 print('////////////////////////Running '+strategy+' , since '+get_date_time()+'////////////////////////')
 msg = '## DONE RUNNING ## \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+' '
 r = requests.post(url_line, headers=headers, data = {'message':msg})
-
-
 
 

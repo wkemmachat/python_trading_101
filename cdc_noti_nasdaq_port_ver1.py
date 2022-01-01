@@ -348,6 +348,8 @@ for index, row in all_symbols_df.iterrows():
 
 print('////////////////////////Running '+strategy+' , since '+get_date_time()+'////////////////////////')
 
+msg = '## DONE RUNNING ## \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+' '
+r = requests.post(url_line, headers=headers, data = {'message':msg})
 
 
 
