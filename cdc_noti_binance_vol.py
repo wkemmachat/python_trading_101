@@ -38,7 +38,7 @@ limit_data_lookback = 200
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
-strategy = 'All Time High'
+strategy = 'High or Low Volume'
 
 
 ### LINE NOTI
@@ -174,6 +174,10 @@ for index, row in all_symbols_df.iterrows():
     # if(index>1):
     #     continue
     # if symbol.lower().find("eth/usdt") >=0  :
+    substring = 'busd'
+
+    if substring in symbol.lower():
+        continue
     if ((symbol.lower().find("usd")) ==0 or (symbol.lower().find("busd"))) ==0:
         continue
 
@@ -210,9 +214,13 @@ for index, row in all_symbols_df.iterrows():
     # print(df.tail(30))
 
     # df.close.rolling(200).max().fillna('N/A')
-    df['ath'] = df.close.rolling((len(df.index)-1)).max().fillna('N/A')
+    # df['ath'] = df.close.rolling((len(df.index)-1)).max().fillna('N/A')
     
-    if(df.iloc[-1]['close']>=df.iloc[-1]['ath']):
+    df['std']           = df.volume.rolling(20).std()
+    df['std_plus_2']    = df.volume+2*df['std']
+    df['std_minus_2']   = df.volume-2*df['std']
+
+    if(df.iloc[-1]['volume']>=df.iloc[-2]['std_plus_2']):
         
         #BUY ACTION
         buyHoldSellSignal = 1
@@ -220,13 +228,37 @@ for index, row in all_symbols_df.iterrows():
 
         saveImage(df,symbol,only_date)
     
-        msg = '-- Buy Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
+        msg = '-- High Volume Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
         r = requests.post(url_line, headers=headers, data = {'message':msg})
 
         msg = symbol
         file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
+    elif(df.iloc[-1]['volume']<=df.iloc[-2]['std_minus_2']):
+        buyHoldSellSignal = -1
+        
+        #Send Notification Discord / Line
+        sell_signal_symbols.append(symbol)
+        
+        saveImage(df,symbol,only_date)
+    
+        msg = '-- Low Volume Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
+        r = requests.post(url_line, headers=headers, data = {'message':msg})
+
+        msg = symbol
+        file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
+        r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
+
+
+
+
+    else:
+        buyHoldSellSignal = 0
+        no_signal_symbols.append(symbol)
+        #Send Notification Discord / Line
+        # msg = '-- No Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade
+        # r = requests.post(url_line, headers=headers, data = {'message':msg})
 
 
     
