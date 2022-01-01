@@ -174,6 +174,10 @@ for index, row in all_symbols_df.iterrows():
     # if(index>1):
     #     continue
     # if symbol.lower().find("eth/usdt") >=0  :
+    substring = 'busd'
+
+    if substring in symbol.lower():
+        continue
     if ((symbol.lower().find("usd")) ==0 or (symbol.lower().find("busd"))) ==0:
         continue
 
