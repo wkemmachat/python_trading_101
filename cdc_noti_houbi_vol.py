@@ -22,8 +22,8 @@ import vectorbt as vbt
 
 # pd.options.plotting.backend = 'plotly'
 
-exchange = ccxt.binance({
-    
+exchange = ccxt.huobi({
+     'enableRateLimit': True,
 })
 #Set Testnet
 # exchange.set_sandbox_mode(True)
@@ -34,15 +34,15 @@ exchange = ccxt.binance({
 # underlying_to_trade = 'ETH/USDT'
 # pair = underlying_to_trade
 timeframe = '1d'
-limit_data_lookback = 100
+limit_data_lookback = 200
 initial_money = 100
 trade_money = initial_money #if first order use initial_money otherwise use comulative_money
 database_name = 'traderecord.db'
-strategy = 'CDC_12_26_STO_RSI'
+strategy = 'High or Low Volume'
 
 
 ### LINE NOTI
-token_line = 'oJ5d4MuDl9C7gjfHGzCoVQPIRy5EUsNhSPbo3cCRl9T'
+token_line = 'eMGJhR7pgg5GSfR0OfFT6BjYLk7Jbsc7ivJVqliCv8g'
 headers = {'Authorization':'Bearer '+token_line}
 url_line = 'https://notify-api.line.me/api/notify'
 
@@ -76,43 +76,6 @@ def get_last_trade_price(pair):
     last_trade_price = trade_history['price']
     
     return float(last_trade_price)
-##########################################
-#Database
-##########################################
-
-def select_balance_id_desc_pair_only(pair):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    cur.execute("SELECT * FROM balance as b where b.underlying_name = ? order by b.id desc ",(pair,))
-    result = cur.fetchone()
-    con.close()
-    return result
-
-def select_balance_id_desc(pair,in_position):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    cur.execute("SELECT * FROM balance as b where b.underlying_name = ? and in_position = ? order by b.id desc ",(pair,in_position))
-    result = cur.fetchone()
-    con.close()
-    return result    
-    
-def insert_balance(underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-    
-    cur.execute("INSERT INTO balance (underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell) VALUES (?,?,?,?,?,?,?,?)",(underlying_name,balance_left,in_position,date,balance_before,buy_price,sell_price,amount_buy_or_sell))
-    con.commit()
-    con.close()
-
-def insert_transaction(underlying_name,amount,buyorsell,date,order,strategy):
-    con = sqlite3.connect(database_name)
-    cur = con.cursor()
-
-    cur.execute("INSERT INTO transaction_detail (underlying_name,amount,buyorsell,date,detail,strategy) VALUES (?,?,?,?,?,?) ",(underlying_name,amount,buyorsell,date,order,strategy))
-    con.commit()
-    con.close()
-
-#End Database    
 
 #Save Image
 def saveImage(df,symbol,only_date):
@@ -154,11 +117,11 @@ def saveImage(df,symbol,only_date):
 #End Save
 
 #Stratergy
-def my_strategy2(df):
-    if (df.EMA_12 > df.EMA_26) :
-        return True
-    else :
-        return False
+# def my_strategy2(df):
+#     if (df.EMA_12 > df.EMA_26) :
+#         return True
+#     else :
+#         return False
 
 
 #Save Port Image
@@ -176,11 +139,11 @@ try:
     #Get Data
     # balance = exchange.fetch_balance()
     # ticker = exchange.fetch_ticker(underlying_to_trade)
-    msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
+    msg = 'API Houbi Working -- Normal --, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
 except:
-    msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()
+    msg = 'API Houbi --- ERROR ---, Timing : '+get_date_time()
     # r = requests.post(url_line, headers=headers, data = {'message':msg})
     # print (r.text)
     canContinue = False
@@ -189,7 +152,7 @@ except:
 #Start Run Bot
 ##########################################
 
-all_symbols_df = pd.read_csv('symbol_binance.csv')
+all_symbols_df = pd.read_csv('symbol_houbi.csv')
 print(all_symbols_df)
 
 buy_signal_symbols = []
@@ -211,6 +174,10 @@ for index, row in all_symbols_df.iterrows():
     # if(index>1):
     #     continue
     # if symbol.lower().find("eth/usdt") >=0  :
+    substring = 'busd'
+
+    if substring in symbol.lower():
+        continue
     if ((symbol.lower().find("usd")) ==0 or (symbol.lower().find("busd"))) ==0:
         continue
 
@@ -224,11 +191,11 @@ for index, row in all_symbols_df.iterrows():
         # ticker = exchange.fetch_ticker(underlying_to_trade)
         bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit_data_lookback)
     
-        msg = 'API Binance Working -- Normal --, Timing : '+get_date_time()
+        msg = 'API Houbi Working -- Normal --, Timing : '+get_date_time()
         # r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
     except:
-        msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()+', Symbol :'+symbol
+        msg = 'API Houbi --- ERROR ---, Timing : '+get_date_time()+', Symbol :'+symbol
         r = requests.post(url_line, headers=headers, data = {'message':msg})
         # print (r.text)
         canContinue = False
@@ -244,11 +211,16 @@ for index, row in all_symbols_df.iterrows():
     df.ta.ema(length=12,append=True)
     df.ta.ema(length=26,append=True)
     df.ta.supertrend(append=True)
-    df.ta.stochrsi(append=True)
     # print(df.tail(30))
 
+    # df.close.rolling(200).max().fillna('N/A')
+    # df['ath'] = df.close.rolling((len(df.index)-1)).max().fillna('N/A')
     
-    if((df.iloc[-1]['EMA_12']>df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']<=df.iloc[-2]['EMA_26'])):
+    df['std']           = df.volume.rolling(20).std()
+    df['std_plus_2']    = df.volume+2*df['std']
+    df['std_minus_2']   = df.volume-2*df['std']
+
+    if(df.iloc[-1]['volume']>=df.iloc[-2]['std_plus_2']):
         
         #BUY ACTION
         buyHoldSellSignal = 1
@@ -256,47 +228,14 @@ for index, row in all_symbols_df.iterrows():
 
         saveImage(df,symbol,only_date)
     
-        msg = '-- Buy Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
+        msg = '-- High Volume Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
         r = requests.post(url_line, headers=headers, data = {'message':msg})
 
         msg = symbol
         file = {'imageFile':open('images/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
         r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
 
-        #Port query more data
-        try:
-            bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=1000)
-            df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df.set_index('timestamp',inplace = True)
-
-            #Insert TA
-            df.ta.rsi(length=14,append=True)
-            df.ta.ema(length=12,append=True)
-            df.ta.ema(length=26,append=True)
-            df.ta.supertrend(append=True)
-            
-            df['signal'] = df.apply(my_strategy2,axis=1).vbt.fshift(1)
-            df = df.iloc[1:,:]
-            signal_vectorbt = df.ta.tsignals(df.signal, asbool=True, append=True)
-            port = vbt.Portfolio.from_signals(df.close,
-                                    entries = signal_vectorbt.TS_Entries,
-                                    exits = signal_vectorbt.TS_Exits,
-                                    init_cash = 100000,
-                                    fees = 0.0025,
-                                    slippage = 0.0025)
-
-            port.plot().write_image('images_port/'+symbol.replace('/','_')+only_date+'.jpg')
-            file = {'imageFile':open('images_port/'+symbol.replace('/','_')+only_date+'.jpg','rb')}
-            r = requests.post(url_line, headers=headers,data = {'message':msg},files=file)
-        
-        except:
-            msg = 'API Binance --- ERROR ---, Timing : '+get_date_time()+', symbol :'+symbol
-            r = requests.post(url_line, headers=headers, data = {'message':msg})
-
-
-
-    elif((df.iloc[-1]['EMA_12']<df.iloc[-1]['EMA_26'])&(df.iloc[-2]['EMA_12']>=df.iloc[-2]['EMA_26'])):
+    elif(df.iloc[-1]['volume']<=df.iloc[-2]['std_minus_2']):
         buyHoldSellSignal = -1
         
         #Send Notification Discord / Line
@@ -304,7 +243,7 @@ for index, row in all_symbols_df.iterrows():
         
         saveImage(df,symbol,only_date)
     
-        msg = '-- Sell Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
+        msg = '-- Low Volume Signal -- \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+'Pair : '+ symbol 
         r = requests.post(url_line, headers=headers, data = {'message':msg})
 
         msg = symbol
@@ -320,6 +259,8 @@ for index, row in all_symbols_df.iterrows():
         #Send Notification Discord / Line
         # msg = '-- No Order --, Timing : '+get_date_time()+', underlying_to_trade : '+ underlying_to_trade
         # r = requests.post(url_line, headers=headers, data = {'message':msg})
+
+
     
 ##########################################
 #End Run Bot
@@ -328,7 +269,7 @@ for index, row in all_symbols_df.iterrows():
 
 
 print('////////////////////////Running '+strategy+' , since '+get_date_time()+'////////////////////////')
-
-
+msg = '## DONE RUNNING ## \n'+'TimeFrame: '+timeframe+'\n'+'Strategy: '+strategy+'\n'+'Timing : '+get_date_time()+'\n'+' '
+r = requests.post(url_line, headers=headers, data = {'message':msg})
 
 
